@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC-600 Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>RC-600 Web Editor</h1>
+        <label>Memory Slot:
+            <input type="number" min="1" max="99" id="memorySlot" />
+        </label>
+        <label>Loop Name:
+            <input type="text" id="loopName" />
+        </label>
+        <label>Tempo (BPM):
+            <input type="number" id="tempo" min="40" max="300" />
+        </label>
+        <label>Time Signature:
+            <select id="timeSignature">
+                <option value="4/4">4/4</option>
+                <option value="3/4">3/4</option>
+                <option value="6/8">6/8</option>
+            </select>
+        </label>
+        <label>Track 1 Volume:
+            <input type="range" min="0" max="100" id="track1Vol" />
+        </label>
+        <label>Track 1 Pan:
+            <input type="range" min="-50" max="50" id="track1Pan" />
+        </label>
+        <label><input type="checkbox" id="fx1" /> FX1</label>
+        <label><input type="checkbox" id="fx2" /> FX2</label>
+        <button onclick="saveSettings()">Save Settings</button>
+        <pre id="output"></pre>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
