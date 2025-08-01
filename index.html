@@ -36,6 +36,13 @@
         <button onclick="saveSettings()">Save Settings</button>
         <pre id="output"></pre>
     </div>
+
+    <h2>MIDI Controls</h2>
+    <button onclick="sendStart()">▶️ Start</button>
+    <button onclick="sendStop()">⏹️ Stop</button>
+    <button onclick="sendProgramChange(0)">Switch to Slot 1</button>
+    <button onclick="sendProgramChange(9)">Switch to Slot 10</button>
+
     <script src="script.js"></script>
 </body>
 </html>
