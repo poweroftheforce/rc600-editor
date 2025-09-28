@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RC-600 MIDI Test</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:20px;background:#111;color:#eee}
+    .box{max-width:520px;margin:0 auto}
+    button,input{font-size:16px;padding:8px;margin:6px 0;width:100%}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>RC-600 MIDI Test</h1>
+    <button id="connect">Connect MIDI</button>
+    <div id="devs"></div>
+    <div>
+      <button id="start">Send START</button>
+      <button id="stop">Send STOP</button>
+    </div>
+    <label>Load memory slot (1-99)</label>
+    <input id="slot" type="number" min="1" max="99" value="1">
+    <button id="load">Load Slot</button>
+
+    <label>Track 1 Volume (0-127)</label>
+    <input id="vol1" type="range" min="0" max="127" value="100">
+
+    <pre id="log"></pre>
+  </div>
+
+  <script src="rc600-midi.js"></script>
+  <script src="rc600-map.js"></script>
+  <script>
+    const log = (s)=> { const p = document.getElementById('log'); p.textContent = s+"\n"+p.textContent; };
+    document.getElementById('connect').onclick = async ()=>{
+      try{
+        const info = await RC600MIDI.init();
+        document.getElementById('devs').textContent = 'IN: ' + (info.input ? info.input.name : 'none') + ' | OUT: ' + (info.output ? info.output.name : 'none');
+        RC600MIDI.on(d => {
+          log('IN: '+ JSON.stringify(d.data));
+          // Optionally auto-parse PC messages that come in:
+          if (d.data && d.data.length>=2) {
+            const st = d.data[0];
+            if ((st & 0xF0) === 0xC0) { // Program change
+              const mem = RC600MIDI.pcToMemorySlot(d.data[1]);
+              log('Program change incoming -> memory '+mem);
+            }
+          }
+        });
+      }catch(e){ alert('MIDI init failed: '+e.message); }
+    };
+
+    document.getElementById('start').onclick = ()=> RC600MIDI.sendStart();
+    document.getElementById('stop').onclick = ()=> RC600MIDI.sendStop();
+    document.getElementById('load').onclick = ()=>{
+      const slot = Number(document.getElementById('slot').value)||1;
+      RC600MAP.loadMemory(slot);
+      log('Sent PC for slot '+slot);
+    };
+    document.getElementById('vol1').oninput = (e)=>{
+      const v = Number(e.target.value);
+      RC600MAP.setTrackVolume(1, v);
+      log('Sent CC (track1 vol) val '+v);
+    };
+  </script>
+</body>
+</html>
