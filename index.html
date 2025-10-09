@@ -33,22 +33,28 @@
   <script src="rc600-map.js"></script>
   <script>
     const log = (s)=> { const p = document.getElementById('log'); p.textContent = s+"\n"+p.textContent; };
-    document.getElementById('connect').onclick = async ()=>{
-      try{
+    let midiConnected = false;
+    document.getElementById('connect').onclick = async () => {
+      if (midiConnected) return;
+      try {
         const info = await RC600MIDI.init();
         document.getElementById('devs').textContent = 'IN: ' + (info.input ? info.input.name : 'none') + ' | OUT: ' + (info.output ? info.output.name : 'none');
         RC600MIDI.on(d => {
-          log('IN: '+ JSON.stringify(d.data));
+          log('IN: ' + JSON.stringify(d.data));
           // Optionally auto-parse PC messages that come in:
-          if (d.data && d.data.length>=2) {
+          if (d.data && d.data.length >= 2) {
             const st = d.data[0];
             if ((st & 0xF0) === 0xC0) { // Program change
               const mem = RC600MIDI.pcToMemorySlot(d.data[1]);
-              log('Program change incoming -> memory '+mem);
+              log('Program change incoming -> memory ' + mem);
             }
           }
         });
-      }catch(e){ alert('MIDI init failed: '+e.message); }
+        midiConnected = true;
+        document.getElementById('connect').disabled = true;
+      } catch (e) {
+        alert('MIDI init failed: ' + e.message);
+      }
     };
 
     document.getElementById('start').onclick = ()=> RC600MIDI.sendStart();
