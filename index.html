@@ -43,7 +43,7 @@
           // Only log program change messages
           if (d.data && d.data.length >= 2) {
             const st = d.data[0];
-            if ((st & 0xF0) === 0xC0) { // Program change
+            if ((st & 0xF0) === 0xC0 || (st & 0xF0) === 0xB0) { // Program change
               log('IN: ' + JSON.stringify(d.data));
               const mem = RC600MIDI.pcToMemorySlot(d.data[1]);
               log('Program change incoming -> memory ' + mem);
