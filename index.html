@@ -40,11 +40,11 @@
         const info = await RC600MIDI.init();
         document.getElementById('devs').textContent = 'IN: ' + (info.input ? info.input.name : 'none') + ' | OUT: ' + (info.output ? info.output.name : 'none');
         RC600MIDI.on(d => {
-          log('IN: ' + JSON.stringify(d.data));
-          // Optionally auto-parse PC messages that come in:
+          // Only log program change messages
           if (d.data && d.data.length >= 2) {
             const st = d.data[0];
             if ((st & 0xF0) === 0xC0) { // Program change
+              log('IN: ' + JSON.stringify(d.data));
               const mem = RC600MIDI.pcToMemorySlot(d.data[1]);
               log('Program change incoming -> memory ' + mem);
             }
