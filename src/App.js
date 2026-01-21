@@ -42,7 +42,7 @@ export default function RC600Controller() {
 
   return (
     <div className="min-h-screen bg-zinc-900 text-white p-4">
-      <h1 className="text-2xl font-bold mb-4">RC-600 Mobile Controller</h1>
+      <h1 className="text-2xl font-bold mb-4">RC-600 Editor (Tier 1 Assigns)</h1>
 
       <button
         onClick={connectMIDI}
