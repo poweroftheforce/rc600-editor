@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/rc600-editor/static/css/main.e6c13ad2.css",
+    "main.js": "/rc600-editor/static/js/main.3332388e.js",
+    "static/js/453.50407135.chunk.js": "/rc600-editor/static/js/453.50407135.chunk.js",
+    "index.html": "/rc600-editor/index.html",
+    "main.e6c13ad2.css.map": "/rc600-editor/static/css/main.e6c13ad2.css.map",
+    "main.3332388e.js.map": "/rc600-editor/static/js/main.3332388e.js.map",
+    "453.50407135.chunk.js.map": "/rc600-editor/static/js/453.50407135.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.3332388e.js"
+  ]
+}
