@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RC600CC } from "../midi/rc600CC";
 import { RC600State, TrackState } from "../types/rc600";
+import { RhythmConfig, RhythmKits } from "../midi/rc600Rhythm";
 
 export function useRC600MIDI() {
   const [state, setState] = useState<RC600State>({
@@ -10,6 +11,15 @@ export function useRC600MIDI() {
 
   const midiInRef = useRef<WebMidi.MIDIInput | null>(null);
   const midiOutRef = useRef<WebMidi.MIDIOutput | null>(null);
+
+  const [rhythmConfig, setRhythmConfig] = useState<RhythmConfig>({
+    kit: "Rock",
+    tempo: 120,
+    fineTempo: 0,
+    variation: 0,
+    swing: 0,
+    level: 100
+  });
 
   // 🎹 Connect to MIDI
   useEffect(() => {
@@ -106,5 +116,76 @@ export function useRC600MIDI() {
     midiOutRef.current?.send([0xb0, cc, value]);
   }
 
-  return { state, sendCC };
+  function sendTempo(bpm: number) {
+    console.log("Sending tempo:", bpm);
+
+    // placeholder for SysEx
+    // sendSysEx([...tempo address..., bpm]);
+  }
+
+  function updateTempo(coarse: number, fine: number) {
+    const finalTempo = coarse + fine;
+
+    setRhythmConfig(prev => ({
+      ...prev,
+      tempo: coarse,
+      fineTempo: fine
+    }));
+
+    sendTempo(finalTempo);
+  }
+
+  function randomizeRhythm() {
+    const randomKit =
+      RhythmKits[Math.floor(Math.random() * RhythmKits.length)];
+
+    const newConfig: RhythmConfig = {
+      kit: randomKit,
+      tempo: Math.floor(Math.random() * (160 - 70) + 70),
+      fineTempo: Math.floor(Math.random() * 5) - 2,
+      variation: Math.floor(Math.random() * 3),
+      swing: Math.floor(Math.random() * 100),
+      level: Math.floor(Math.random() * 127)
+    };
+
+    setRhythmConfig(newConfig);
+
+    // apply to hardware
+    sendTempo(newConfig.tempo + newConfig.fineTempo);
+    console.log("Randomized rhythm:", newConfig);
+  }
+
+  function saveConfig(config: RhythmConfig) {
+    const json = JSON.stringify(config, null, 2);
+    localStorage.setItem("rc600-rhythm", json);
+  }
+
+  function loadConfig(): RhythmConfig | null {
+    const raw = localStorage.getItem("rc600-rhythm");
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function downloadConfig(config: RhythmConfig) {
+    const blob = new Blob([JSON.stringify(config, null, 2)], {
+      type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rc600-rhythm.json";
+    a.click();
+  }
+
+  return {
+    state,
+    sendCC,
+    rhythmConfig,
+    setRhythmConfig,
+    updateTempo,
+    randomizeRhythm,
+    saveConfig,
+    loadConfig,
+    downloadConfig
+  };
 }
