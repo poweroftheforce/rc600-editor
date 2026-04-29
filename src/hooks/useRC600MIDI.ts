@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { RC600CC } from "../midi/rc600CC";
+import { useEffect, useState } from "react";
 import {
   RhythmConfig,
   RhythmGenres,
@@ -43,7 +42,7 @@ export function useRC600MIDI() {
     EDM: 7
   };
 
-  const { handleMessage, midiInRef, midiOutRef, sendCC, sendSysEx, state } = useMidi();
+  const { sendCC, sendSysEx, state } = useMidi();
   const [level, setLevel] = useState<number>(100);
   const [lockState, setLockState] = useState<RhythmLockState>({});
   const [snapshots, setSnapshots] = useState<RhythmSnapshot[]>([]);
@@ -51,26 +50,8 @@ export function useRC600MIDI() {
   const updateRhythmLevel = (newLevel: number) => {
     setLevel(newLevel);
     setRhythmConfig((prev) => ({ ...prev, level: newLevel }));
-    // This sends the CC message back to the pedal
-    sendCC(RC600CC.RHYTHM_LEVEL, newLevel);
+    sendRhythmLevel(newLevel);
   };
-
-  // 🎹 Connect to MIDI
-  useEffect(() => {
-    navigator
-      .requestMIDIAccess({ sysex: true, software: true })
-      .then((access) => {
-        const inputs = Array.from(access.inputs.values());
-        const outputs = Array.from(access.outputs.values());
-
-        midiInRef.current = inputs.find((i) => i.name?.includes("RC-600")) || inputs[0];
-        midiOutRef.current = outputs.find((o) => o.name?.includes("RC-600")) || outputs[0];
-
-        if (midiInRef.current) {
-          midiInRef.current.onmidimessage = handleMessage;
-        }
-      });
-  }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem("rc600-snapshots");
@@ -137,11 +118,6 @@ export function useRC600MIDI() {
     updateRhythmLevel(config.level);
   }
 
-  function rolandChecksum(bytes: number[]) {
-    const sum = bytes.reduce((a, b) => a + b, 0);
-    return (128 - (sum % 128)) & 0x7f;
-  }
-
   /* TEMP Helper funcs */
   function sendRhythmKit(kit: string) {
     sendSysEx(
@@ -164,12 +140,13 @@ export function useRC600MIDI() {
     );
   }
 
-  // function sendRhythmLevel(level: number) {
-  //   sendSysEx(
-  //     [0x00, 0x02, 0x00, 0x00], // placeholder
-  //     [level & 0x7f]
-  //   );
-  // }
+  function sendRhythmLevel(level: number) {
+    sendSysEx(
+      [0x00, 0x02, 0x00, 0x00], // placeholder
+      [level & 0x7f]
+    );
+  }
+
   /* END :: TEMP Helper funcs */
 
   function saveConfig(config: RhythmConfig) {
@@ -286,6 +263,7 @@ export function useRC600MIDI() {
     saveSnapshot,
     loadSnapshot,
     updateTempo,
+    applyRhythmConfig,
     randomizeRhythm,
     saveConfig,
     loadConfig,

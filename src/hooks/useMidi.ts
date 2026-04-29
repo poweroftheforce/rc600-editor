@@ -20,22 +20,17 @@ function useRC600MIDI() {
     rhythmOn: false,
     tracks: {}
   });
-  const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null>(null);
   const [inputs, setInputs] = useState<WebMidi.MIDIInput[]>([]);
-  const [outputs, setOutputs] = useState<WebMidi.MIDIOutput[]>([]);
   const midiInRef = useRef<WebMidi.MIDIInput | null>(null);
   const midiOutRef = useRef<WebMidi.MIDIOutput | null>(null);
 
   // request MIDI access
   useEffect(() => {
-    navigator.requestMIDIAccess({ sysex: false, software: true }).then((access) => {
-      setMidiAccess(access);
-
+    navigator.requestMIDIAccess({ sysex: true, software: true }).then((access) => {
       const ins = Array.from(access.inputs.values());
       const outs = Array.from(access.outputs.values());
 
       setInputs(ins);
-      setOutputs(outs);
 
       // auto-select RC-600 if present
       const rcIn = ins.find(i => i.name?.includes("RC-600")) || ins[0];
@@ -69,6 +64,7 @@ function useRC600MIDI() {
     return () => {
       input.onmidimessage = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs]);
 
   /**
@@ -82,14 +78,6 @@ function useRC600MIDI() {
    * @property {boolean} rhythmOn
    * @property {Object.<number, TrackState>} tracks
    */
-
-  const rcState: {
-    rhythmOn: boolean;
-    tracks: Record<number, TrackState>;
-  } = {
-    rhythmOn: false,
-    tracks: {}
-  };
 
   // 🎧 Handle incoming MIDI
   function handleMessage(event: WebMidi.MIDIMessageEvent) {
@@ -190,16 +178,6 @@ function useRC600MIDI() {
   function handleNote(note: number, velocity: number, channel: number) {
     // RC-600 sometimes uses note events for triggers
     console.log("NOTE:", note, velocity, channel);
-  }
-
-  function updateTrackState(track: number, value: number) {
-    rcState.tracks[track] = {
-      playing: value === 127,
-      recording: value === 64,
-      stopped: false
-    };
-
-    console.log("updateTrackState::Track", track, rcState.tracks[track]);
   }
 
   function sendCC(cc: number, value: number, humanChannel = 10) {

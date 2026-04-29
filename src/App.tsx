@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useRC600MIDI } from "./hooks/useRC600MIDI";
 import { TrackGrid } from "./components/TrackGrid";
 import { RC600CC } from "./midi/rc600CC";
@@ -17,11 +17,8 @@ export default function App() {
     toggleLock,
     saveSnapshot,
     loadSnapshot,
-    updateTempo,
     randomizeRhythm,
-    saveConfig,
-    loadConfig,
-    downloadConfig
+    applyRhythmConfig,
   } = useRC600MIDI();
 
   return (
@@ -42,7 +39,7 @@ export default function App() {
         updateRhythmLevel={updateRhythmLevel}
         onChange={(cfg) => {
           setRhythmConfig(cfg);
-          updateTempo(cfg.tempo, cfg.fineTempo);
+          applyRhythmConfig(cfg);
         }}
         onRandomize={() => randomizeRhythm(level)}
         toggleLock={toggleLock}
