@@ -6,19 +6,23 @@ import { RhythmPanel } from "./components/RhythmPanel";
 
 export default function App() {
   const {
-  state,
-  sendCC,
-  rhythmConfig,
-  setRhythmConfig,
-  updateTempo,
-  randomizeRhythm,
-  saveConfig,
-  loadConfig,
-  downloadConfig
-} = useRC600MIDI();
-
-  //const [rhythmConfig, setRhythmConfig] = useState({ tempo: 120, fineTempo: 0, kit: 0, variation: 0, swing: 0, level: 100 });
-
+    state,
+    sendCC,
+    level,
+    updateRhythmLevel,
+    rhythmConfig,
+    setRhythmConfig,
+    lockState,
+    snapshots,
+    toggleLock,
+    saveSnapshot,
+    loadSnapshot,
+    updateTempo,
+    randomizeRhythm,
+    saveConfig,
+    loadConfig,
+    downloadConfig
+  } = useRC600MIDI();
 
   return (
     <div style={{ padding: 20 }}>
@@ -32,11 +36,18 @@ export default function App() {
 
       <RhythmPanel
         config={rhythmConfig}
+        level={level}
+        locks={lockState}
+        snapshots={snapshots}
+        updateRhythmLevel={updateRhythmLevel}
         onChange={(cfg) => {
           setRhythmConfig(cfg);
           updateTempo(cfg.tempo, cfg.fineTempo);
         }}
-        onRandomize={randomizeRhythm}
+        onRandomize={() => randomizeRhythm(level)}
+        toggleLock={toggleLock}
+        saveSnapshot={saveSnapshot}
+        loadSnapshot={loadSnapshot}
       />
     </div>
   );

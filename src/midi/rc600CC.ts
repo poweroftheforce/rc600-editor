@@ -1,5 +1,6 @@
 export enum RC600CC {
   // Rhythm
+  RHYTHM_LEVEL = 21, // Placeholder CC for rhythm level (not an actual RC-600 CC)
   RHYTHM_START_STOP = 94,
   RHYTHM_VARIATION = 95,
   RHYTHM_FILL = 96,

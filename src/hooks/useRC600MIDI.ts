@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { RC600CC } from "../midi/rc600CC";
-import { RC600State, TrackState } from "../types/rc600";
-import { RhythmConfig, RhythmKits } from "../midi/rc600Rhythm";
+import {
+  RhythmConfig,
+  RhythmGenres,
+  RhythmKits,
+  RhythmLockKey,
+  RhythmLockState,
+  RhythmSnapshot
+} from "../midi/rc600Rhythm";
+import { useMidi } from "./useMidi";
 
 export function useRC600MIDI() {
-  const [state, setState] = useState<RC600State>({
-    rhythmOn: false,
-    tracks: {}
-  });
-
-  const midiInRef = useRef<WebMidi.MIDIInput | null>(null);
-  const midiOutRef = useRef<WebMidi.MIDIOutput | null>(null);
+  const beats = [
+    "4/4",
+    "3/4",
+    "6/8",
+    "7/8"
+  ];
 
   const [rhythmConfig, setRhythmConfig] = useState<RhythmConfig>({
     kit: "Rock",
@@ -18,22 +24,47 @@ export function useRC600MIDI() {
     fineTempo: 0,
     variation: 0,
     swing: 0,
-    level: 100
+    level: 100,
+    genre: RhythmGenres[0],
+    beat: beats[2],
+    pattern: "AUTO",
+    startTrig: "LOOP START",
+    stopTrig: "LOOP STOP",
   });
+
+  const kitMap: Record<string, number> = {
+    Rock: 0,
+    Pop: 1,
+    Funk: 2,
+    Jazz: 3,
+    Metal: 4,
+    Latin: 5,
+    Blues: 6,
+    EDM: 7
+  };
+
+  const { handleMessage, midiInRef, midiOutRef, sendCC, sendSysEx, state } = useMidi();
+  const [level, setLevel] = useState<number>(100);
+  const [lockState, setLockState] = useState<RhythmLockState>({});
+  const [snapshots, setSnapshots] = useState<RhythmSnapshot[]>([]);
+
+  const updateRhythmLevel = (newLevel: number) => {
+    setLevel(newLevel);
+    setRhythmConfig((prev) => ({ ...prev, level: newLevel }));
+    // This sends the CC message back to the pedal
+    sendCC(RC600CC.RHYTHM_LEVEL, newLevel);
+  };
 
   // 🎹 Connect to MIDI
   useEffect(() => {
     navigator
-      .requestMIDIAccess({ sysex: false, software: true })
+      .requestMIDIAccess({ sysex: true, software: true })
       .then((access) => {
         const inputs = Array.from(access.inputs.values());
         const outputs = Array.from(access.outputs.values());
 
-        midiInRef.current =
-          inputs.find((i) => i.name?.includes("RC-600")) || inputs[0];
-
-        midiOutRef.current =
-          outputs.find((o) => o.name?.includes("RC-600")) || outputs[0];
+        midiInRef.current = inputs.find((i) => i.name?.includes("RC-600")) || inputs[0];
+        midiOutRef.current = outputs.find((o) => o.name?.includes("RC-600")) || outputs[0];
 
         if (midiInRef.current) {
           midiInRef.current.onmidimessage = handleMessage;
@@ -41,86 +72,27 @@ export function useRC600MIDI() {
       });
   }, []);
 
-  // 🎧 Handle incoming MIDI
-  function handleMessage(event: WebMidi.MIDIMessageEvent) {
-    const [status, data1, data2] = event.data;
-    const type = status & 0xf0;
+  useEffect(() => {
+    const raw = localStorage.getItem("rc600-snapshots");
+    if (!raw) return;
 
-    if (type === 0xb0) handleCC(data1, data2);
-  }
-
-  function handleCC(cc: number, value: number) {
-    setState((prev) => {
-      const next = { ...prev, tracks: { ...prev.tracks } };
-
-      // 🎵 Rhythm
-      if (cc === RC600CC.RHYTHM_START_STOP) {
-        next.rhythmOn = value > 0;
-      }
-
-      // 🎚 Track states
-      const trackMap: Record<number, keyof TrackState> = {
-        [RC600CC.TRACK1_PLAY]: "playing",
-        [RC600CC.TRACK2_PLAY]: "playing",
-        [RC600CC.TRACK3_PLAY]: "playing",
-        [RC600CC.TRACK4_PLAY]: "playing",
-        [RC600CC.TRACK5_PLAY]: "playing",
-        [RC600CC.TRACK6_PLAY]: "playing",
-
-        [RC600CC.TRACK1_REC]: "recording",
-        [RC600CC.TRACK2_REC]: "recording",
-        [RC600CC.TRACK3_REC]: "recording",
-        [RC600CC.TRACK4_REC]: "recording",
-        [RC600CC.TRACK5_REC]: "recording",
-        [RC600CC.TRACK6_REC]: "recording",
-
-        [RC600CC.TRACK1_STOP]: "stopped",
-        [RC600CC.TRACK2_STOP]: "stopped",
-        [RC600CC.TRACK3_STOP]: "stopped",
-        [RC600CC.TRACK4_STOP]: "stopped",
-        [RC600CC.TRACK5_STOP]: "stopped",
-        [RC600CC.TRACK6_STOP]: "stopped"
-      };
-
-      if (trackMap[cc]) {
-        const trackNum = getTrackFromCC(cc);
-        const key = trackMap[cc];
-
-        const prevTrack = prev.tracks[trackNum] || {
-          playing: false,
-          recording: false,
-          stopped: true
-        };
-
-        next.tracks[trackNum] = {
-          ...prevTrack,
-          [key]: value > 0
-        };
-      }
-
-      return next;
-    });
-  }
-
-  function getTrackFromCC(cc: number): number {
-    const map: Record<number, number> = {
-      80: 1, 81: 2, 82: 3, 83: 4, 84: 5, 85: 6,
-      70: 1, 71: 2, 72: 3, 73: 4, 74: 5, 75: 6,
-      60: 1, 61: 2, 62: 3, 63: 4, 64: 5, 65: 6
-    };
-    return map[cc] || 1;
-  }
-
-  // 🚀 send MIDI out
-  function sendCC(cc: number, value: number) {
-    midiOutRef.current?.send([0xb0, cc, value]);
-  }
+    try {
+      setSnapshots(JSON.parse(raw));
+    } catch {
+      setSnapshots([]);
+    }
+  }, []);
 
   function sendTempo(bpm: number) {
-    console.log("Sending tempo:", bpm);
+    const scaled = Math.round(bpm * 10);
 
-    // placeholder for SysEx
-    // sendSysEx([...tempo address..., bpm]);
+    const msb = (scaled >> 7) & 0x7f;
+    const lsb = scaled & 0x7f;
+
+    sendSysEx(
+      [0x00, 0x01, 0x00, 0x00], // tempo address placeholder
+      [msb, lsb]
+    );
   }
 
   function updateTempo(coarse: number, fine: number) {
@@ -135,25 +107,70 @@ export function useRC600MIDI() {
     sendTempo(finalTempo);
   }
 
-  function randomizeRhythm() {
-    const randomKit =
-      RhythmKits[Math.floor(Math.random() * RhythmKits.length)];
+  function randomizeRhythm(level: number = 100) {
+    const current = rhythmConfig;
 
-    const newConfig: RhythmConfig = {
-      kit: randomKit,
-      tempo: Math.floor(Math.random() * (160 - 70) + 70),
-      fineTempo: Math.floor(Math.random() * 5) - 2,
-      variation: Math.floor(Math.random() * 3),
-      swing: Math.floor(Math.random() * 100),
-      level: Math.floor(Math.random() * 127)
+    const nextConfig: RhythmConfig = {
+      genre: lockState.genre ? current.genre : RhythmGenres[Math.floor(Math.random() * RhythmGenres.length)],
+      pattern: lockState.pattern ? current.pattern : "AUTO",
+      variation: lockState.variation ? current.variation : Math.floor(Math.random() * 4),
+      kit: lockState.kit ? current.kit : RhythmKits[Math.floor(Math.random() * RhythmKits.length)],
+      beat: lockState.beat ? current.beat : beats[Math.floor(Math.random() * beats.length)],
+      tempo: lockState.tempo ? current.tempo : Math.floor(Math.random() * 90) + 70,
+      fineTempo: lockState.fineTempo ? current.fineTempo : Math.floor(Math.random() * 5) - 2,
+      swing: lockState.swing ? current.swing : Math.floor(Math.random() * 100),
+      level: lockState.level ? current.level : level,
+      startTrig: lockState.startTrig ? current.startTrig : "LOOP START",
+      stopTrig: lockState.stopTrig ? current.stopTrig : "LOOP STOP"
     };
 
-    setRhythmConfig(newConfig);
-
-    // apply to hardware
-    sendTempo(newConfig.tempo + newConfig.fineTempo);
-    console.log("Randomized rhythm:", newConfig);
+    setRhythmConfig(nextConfig);
+    applyRhythmConfig(nextConfig);
   }
+
+  function applyRhythmConfig(config: RhythmConfig) {
+    sendTempo(config.tempo + config.fineTempo);
+    sendRhythmKit(config.kit);
+    sendVariation(config.variation);
+    sendSwing(config.swing);
+    // sendRhythmLevel(config.level);
+    updateRhythmLevel(config.level);
+  }
+
+  function rolandChecksum(bytes: number[]) {
+    const sum = bytes.reduce((a, b) => a + b, 0);
+    return (128 - (sum % 128)) & 0x7f;
+  }
+
+  /* TEMP Helper funcs */
+  function sendRhythmKit(kit: string) {
+    sendSysEx(
+      [0x00, 0x05, 0x00, 0x00], // placeholder
+      [kitMap[kit] ?? 0]
+    );
+  }
+
+  function sendVariation(variation: number) {
+    sendSysEx(
+      [0x00, 0x03, 0x00, 0x00], // placeholder
+      [variation & 0x7f]
+    );
+  }
+
+  function sendSwing(swing: number) {
+    sendSysEx(
+      [0x00, 0x04, 0x00, 0x00], // placeholder
+      [swing & 0x7f]
+    );
+  }
+
+  // function sendRhythmLevel(level: number) {
+  //   sendSysEx(
+  //     [0x00, 0x02, 0x00, 0x00], // placeholder
+  //     [level & 0x7f]
+  //   );
+  // }
+  /* END :: TEMP Helper funcs */
 
   function saveConfig(config: RhythmConfig) {
     const json = JSON.stringify(config, null, 2);
@@ -163,6 +180,45 @@ export function useRC600MIDI() {
   function loadConfig(): RhythmConfig | null {
     const raw = localStorage.getItem("rc600-rhythm");
     return raw ? JSON.parse(raw) : null;
+  }
+
+  function persistSnapshots(nextSnapshots: RhythmSnapshot[]) {
+    setSnapshots(nextSnapshots);
+    localStorage.setItem("rc600-snapshots", JSON.stringify(nextSnapshots));
+  }
+
+  function toggleLock(field: RhythmLockKey) {
+    setLockState((prev) => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  }
+
+  function saveSnapshot(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    const nextSnapshots = [
+      ...snapshots.filter((snapshot) => snapshot.name !== trimmed),
+      {
+        name: trimmed,
+        config: rhythmConfig,
+        locks: lockState,
+        savedAt: new Date().toISOString()
+      }
+    ];
+
+    persistSnapshots(nextSnapshots);
+  }
+
+  function loadSnapshot(name: string) {
+    const snapshot = snapshots.find((snapshot) => snapshot.name === name);
+    if (!snapshot) return;
+
+    setLockState(snapshot.locks);
+    setRhythmConfig(snapshot.config);
+    setLevel(snapshot.config.level);
+    applyRhythmConfig(snapshot.config);
   }
 
   function downloadConfig(config: RhythmConfig) {
@@ -177,15 +233,65 @@ export function useRC600MIDI() {
     a.click();
   }
 
+  function savePreset(name: string) {
+    const presets = JSON.parse(
+      localStorage.getItem("rc600-presets") || "{}"
+    );
+
+    presets[name] = rhythmConfig;
+
+    localStorage.setItem(
+      "rc600-presets",
+      JSON.stringify(presets, null, 2)
+    );
+  }
+
+  function loadPreset(name: string) {
+    const presets = JSON.parse(
+      localStorage.getItem("rc600-presets") || "{}"
+    );
+
+    if (!presets[name]) return;
+
+    setRhythmConfig(presets[name]);
+    applyRhythmConfig(presets[name]);
+  }
+
+  function exportPresets() {
+    const presets =
+      localStorage.getItem("rc600-presets") || "{}";
+
+    const blob = new Blob([presets], {
+      type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rc600-presets.json";
+    a.click();
+  }
+
   return {
     state,
     sendCC,
+    level,
+    updateRhythmLevel,
     rhythmConfig,
     setRhythmConfig,
+    lockState,
+    snapshots,
+    toggleLock,
+    saveSnapshot,
+    loadSnapshot,
     updateTempo,
     randomizeRhythm,
     saveConfig,
     loadConfig,
-    downloadConfig
+    downloadConfig,
+    savePreset,
+    loadPreset,
+    exportPresets
   };
 }
