@@ -87,23 +87,6 @@ function useRC600MIDI() {
     if (type === 0xb0) handleCC(data1, data2, status & 0x0f);
   }
 
-  // function handleCC(cc: number, value: number, channel: number) {
-  //   switch (cc) {
-  //     case 94: // Rhythm Start/Stop
-  //       rcState.rhythmOn = value > 0;
-  //       console.log("handleCC::Rhythm:", rcState.rhythmOn ? "ON" : "OFF");
-  //       break;
-
-  //     case 80: // example track state
-  //       updateTrackState(1, value);
-  //       console.log("handleCC::Track 1:", rcState.tracks[1]);
-  //       break;
-
-  //     default:
-  //       console.log(`handleCC::default CC ${cc} = ${value}`);
-  //       break;
-  //   }
-  // }
   function handleCC(cc: number, value: number, channel: number) {
     setState((prev) => {
       const next = { ...prev, tracks: { ...prev.tracks } };
