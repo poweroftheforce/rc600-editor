@@ -5,6 +5,7 @@ function SysExMonitor() {
   const [messages, setMessages] = useState<string[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [showTestSender, setShowTestSender] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [testAddress, setTestAddress] = useState("00010000");
   const [testData, setTestData] = useState("0001");
 

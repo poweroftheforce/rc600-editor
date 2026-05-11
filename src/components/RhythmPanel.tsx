@@ -1,45 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   RhythmKits,
-  RhythmGenres,
   RhythmConfig,
   RhythmLockKey,
-  RhythmLockState,
-  RhythmSnapshot
+  RhythmLockState
 } from "../midi/rc600Rhythm";
 
 type Props = {
   config: RhythmConfig;
-  level: number;
   locks: RhythmLockState;
-  snapshots: RhythmSnapshot[];
-  updateRhythmLevel: (level: number) => void;
+  toggleLock: (field: RhythmLockKey) => void;
   onChange: (config: RhythmConfig) => void;
   onRandomize: () => void;
-  toggleLock: (field: RhythmLockKey) => void;
-  saveSnapshot: (name: string) => void;
-  loadSnapshot: (name: string) => void;
 };
 
 export const RhythmPanel: React.FC<Props> = ({
   config,
-  level,
   locks,
-  snapshots,
-  updateRhythmLevel,
-  onChange,
-  onRandomize,
   toggleLock,
-  saveSnapshot,
-  loadSnapshot
+  onChange,
+  onRandomize
 }) => {
-  const [snapshotName, setSnapshotName] = useState("");
-
   const lockFields: Array<{ key: RhythmLockKey; label: string }> = [
-    { key: "genre", label: "Genre" },
     { key: "kit", label: "Kit" },
-    { key: "variation", label: "Variation" },
-    { key: "beat", label: "Beat" },
     { key: "tempo", label: "Tempo" },
     { key: "fineTempo", label: "Fine Tempo" },
     { key: "swing", label: "Swing" },
@@ -51,19 +34,6 @@ export const RhythmPanel: React.FC<Props> = ({
       <h3>Rhythm Control</h3>
 
       <div style={{ display: "grid", gap: 12 }}>
-        <div>
-          <label>Genre</label>
-          <select
-            value={config.genre}
-            onChange={(e) => onChange({ ...config, genre: e.target.value as any })}
-            style={{ width: "100%" }}
-          >
-            {RhythmGenres.map((genre) => (
-              <option key={genre}>{genre}</option>
-            ))}
-          </select>
-        </div>
-
         <div>
           <label>Kit</label>
           <select
@@ -78,13 +48,13 @@ export const RhythmPanel: React.FC<Props> = ({
         </div>
 
         <div>
-          <label>Level: {level}</label>
+          <label>Level: {config.level}</label>
           <input
             type="range"
             min={0}
             max={127}
-            value={level}
-            onChange={(e) => updateRhythmLevel(+e.target.value)}
+            value={config.level}
+            onChange={(e) => onChange({ ...config, level: +e.target.value })}
             style={{ width: "100%" }}
           />
         </div>
@@ -125,14 +95,15 @@ export const RhythmPanel: React.FC<Props> = ({
           />
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
           {lockFields.map((field) => (
             <button
               key={field.key}
               type="button"
               onClick={() => toggleLock(field.key)}
               style={{
-                padding: "8px 10px",
+                flex: "1 1 120px",
+                padding: "10px 12px",
                 borderRadius: 10,
                 border: "1px solid #444",
                 background: locks[field.key] ? "#2f8" : "#333",
@@ -152,46 +123,6 @@ export const RhythmPanel: React.FC<Props> = ({
         >
           🎲 Randomize Rhythm
         </button>
-
-        <div style={{ borderTop: "1px solid #444", paddingTop: 12, marginTop: 12 }}>
-          <div style={{ marginBottom: 8, fontWeight: "bold" }}>Snapshots</div>
-
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-            <input
-              value={snapshotName}
-              onChange={(e) => setSnapshotName(e.target.value)}
-              placeholder="Snapshot name"
-              style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #444", background: "#111", color: "white" }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                saveSnapshot(snapshotName);
-                setSnapshotName("");
-              }}
-              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: "#2f8", color: "#111", cursor: "pointer" }}
-            >
-              Save
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gap: 8 }}>
-            {snapshots.length === 0 ? (
-              <div style={{ color: "#aaa" }}>No snapshots saved yet.</div>
-            ) : (
-              snapshots.map((snapshot) => (
-                <button
-                  key={snapshot.name}
-                  type="button"
-                  onClick={() => loadSnapshot(snapshot.name)}
-                  style={{ textAlign: "left", padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "white" }}
-                >
-                  {snapshot.name} • {new Date(snapshot.savedAt).toLocaleTimeString()}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

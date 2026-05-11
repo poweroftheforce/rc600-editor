@@ -1,7 +1,5 @@
 import React from "react";
 import { useRC600MIDI } from "./hooks/useRC600MIDI";
-import { TrackGrid } from "./components/TrackGrid";
-import { RC600CC } from "./midi/rc600CC";
 import { RhythmPanel } from "./components/RhythmPanel";
 import SysExMonitor from "./components/SysExMonitor";
 
@@ -9,19 +7,13 @@ export default function App() {
   const [currentView, setCurrentView] = React.useState<'controller' | 'monitor'>('controller');
 
   const {
-    state,
-    sendCC,
-    level,
-    updateRhythmLevel,
     rhythmConfig,
     setRhythmConfig,
-    lockState,
-    snapshots,
-    toggleLock,
-    saveSnapshot,
-    loadSnapshot,
     randomizeRhythm,
     applyRhythmConfig,
+    triggerRhythmStartStop,
+    lockState,
+    toggleLock
   } = useRC600MIDI();
 
   if (currentView === 'monitor') {
@@ -45,26 +37,19 @@ export default function App() {
         </button>
       </div>
 
-      <button onClick={() => sendCC(RC600CC.RHYTHM_START_STOP, 127)}>
+      <button onClick={() => triggerRhythmStartStop()}>
         Toggle Rhythm
       </button>
 
-      <TrackGrid state={state} />
-
       <RhythmPanel
         config={rhythmConfig}
-        level={level}
         locks={lockState}
-        snapshots={snapshots}
-        updateRhythmLevel={updateRhythmLevel}
+        toggleLock={toggleLock}
         onChange={(cfg) => {
           setRhythmConfig(cfg);
           applyRhythmConfig(cfg);
         }}
-        onRandomize={() => randomizeRhythm(level)}
-        toggleLock={toggleLock}
-        saveSnapshot={saveSnapshot}
-        loadSnapshot={loadSnapshot}
+        onRandomize={() => randomizeRhythm()}
       />
     </div>
   );
