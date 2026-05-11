@@ -1,9 +1,15 @@
 export enum RC600CC {
   // Rhythm
-  RHYTHM_LEVEL = 21, // Placeholder CC for rhythm level (not an actual RC-600 CC)
+  TEMPO = 20,
+  RHYTHM_LEVEL = 21,
+  RHYTHM_VARIATION = 22,
+  RHYTHM_KIT = 23,
+  SWING = 24,
+
   RHYTHM_START_STOP = 94,
-  RHYTHM_VARIATION = 95,
-  RHYTHM_FILL = 96,
+  RHYTHM_FILL = 95,
+  LOOP_START = 96,
+  LOOP_STOP = 97,
 
   // Track Transport (1–6)
   TRACK1_PLAY = 80,
@@ -26,6 +32,5 @@ export enum RC600CC {
   TRACK4_STOP = 63,
   TRACK5_STOP = 64,
   TRACK6_STOP = 65,
-  TEMPO,
-  FINE_TEMPO
+  // FINE_TEMPO = 26
 }

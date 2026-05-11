@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RC600CC } from "../midi/rc600CC";
 import {
   RhythmConfig,
   RhythmGenres,
@@ -64,16 +65,40 @@ export function useRC600MIDI() {
     }
   }, []);
 
+  // function mapMinMaxToACT(input: number, min: number, max: number) {
+  function mapMinMaxToACT(input: number) {
+    // Ranges: min-max to 1-127
+    // return (input - min) * (127 - 1) / (max - min) + 1;
+    return (input - 40) * (127 - 1) / (300 - 40) + 1;
+  }
+
   function sendTempo(bpm: number) {
-    const scaled = Math.round(bpm * 10);
+    // sendCC(RC600CC.TEMPO, mapMinMaxToACT(bpm, 40, 300));
+    sendCC(RC600CC.TEMPO, mapMinMaxToACT(bpm));
+  }
 
-    const msb = (scaled >> 7) & 0x7f;
-    const lsb = scaled & 0x7f;
+  function sendRhythmLevel(level: number) {
+    sendCC(RC600CC.RHYTHM_LEVEL, level);
+  }
 
-    sendSysEx(
-      [0x00, 0x01, 0x00, 0x00], // tempo address placeholder
-      [msb, lsb]
-    );
+  function sendVariation(variation: number) {
+    sendCC(RC600CC.RHYTHM_VARIATION, variation);
+  }
+
+  function sendRhythmKit(kit: string) {
+    sendCC(RC600CC.RHYTHM_KIT, kitMap[kit] ?? 0);
+  }
+
+  function sendSwing(swing: number) {
+    sendCC(RC600CC.SWING, swing);
+  }
+
+  function triggerRhythmStartStop() {
+    sendCC(RC600CC.RHYTHM_START_STOP, 127);
+  }
+
+  function triggerFill() {
+    sendCC(RC600CC.RHYTHM_FILL, 127);
   }
 
   function updateTempo(coarse: number, fine: number) {
@@ -117,37 +142,6 @@ export function useRC600MIDI() {
     // sendRhythmLevel(config.level);
     updateRhythmLevel(config.level);
   }
-
-  /* TEMP Helper funcs */
-  function sendRhythmKit(kit: string) {
-    sendSysEx(
-      [0x00, 0x05, 0x00, 0x00], // placeholder
-      [kitMap[kit] ?? 0]
-    );
-  }
-
-  function sendVariation(variation: number) {
-    sendSysEx(
-      [0x00, 0x03, 0x00, 0x00], // placeholder
-      [variation & 0x7f]
-    );
-  }
-
-  function sendSwing(swing: number) {
-    sendSysEx(
-      [0x00, 0x04, 0x00, 0x00], // placeholder
-      [swing & 0x7f]
-    );
-  }
-
-  function sendRhythmLevel(level: number) {
-    sendSysEx(
-      [0x00, 0x02, 0x00, 0x00], // placeholder
-      [level & 0x7f]
-    );
-  }
-
-  /* END :: TEMP Helper funcs */
 
   function saveConfig(config: RhythmConfig) {
     const json = JSON.stringify(config, null, 2);
@@ -263,6 +257,7 @@ export function useRC600MIDI() {
     saveSnapshot,
     loadSnapshot,
     updateTempo,
+    triggerRhythmStartStop,
     applyRhythmConfig,
     randomizeRhythm,
     saveConfig,
