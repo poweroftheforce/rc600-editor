@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import RC600Controller from './App';
 
-test('renders learn react link', () => {
+test('renders the controller view even when Web MIDI is unavailable', () => {
   render(<RC600Controller />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  expect(screen.getByText(/RC-600 Controller/i)).toBeInTheDocument();
 });
